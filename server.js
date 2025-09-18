@@ -36,10 +36,8 @@ mongoose.connect(mongoUri)
         process.exit(1);
     });
 
-// --- UPDATED CORS CONFIGURATION FOR VERCEL ---
-// IMPORTANT: Replace the vercel.app URL with your actual frontend deployment URL
 const allowedOrigins = [
-    'https://your-project-name.vercel.app', 
+    'https://phase-shift-six.vercel.app/', 
     'http://localhost:5173'                 
 ];
 
@@ -63,6 +61,7 @@ const signAppToken = (user) => {
 };
 
 // --- API Routes ---
+// This base route will now work correctly on Vercel
 app.get('/api', (req, res) => {
     res.json({ message: 'Hello from the Jeevan Jyothi API server!' });
 });
@@ -136,17 +135,11 @@ app.post('/api/auth/google', async (req, res) => {
     }
 });
 
-app.get('/api/dashboard/data', (req, res) => {
-    res.json({ message: "This is a placeholder for protected dashboard data." });
-});
-
 // --- Server Startup ---
-// This part is mainly for local development. Vercel will handle the server in production.
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
-    });
-}
+// This part is for local development. Vercel ignores it in production.
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
 
 // Export the app for Vercel's serverless environment
 export default app;
