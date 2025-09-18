@@ -5,24 +5,23 @@ import Footer from './components/Footer.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
 
-// Replace this with your actual Google Client ID
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE";
 
 export default function App() {
   const [currentPage, setCurrentPage] = React.useState('home');
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
 
-  // Check for token on initial load
   React.useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       setIsLoggedIn(true);
-      setCurrentPage('dashboard');
+      // Start on dashboard if already logged in
+      setCurrentPage('dashboard'); 
     }
   }, []);
 
-  // Scroll to top when page changes
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
@@ -37,7 +36,6 @@ export default function App() {
     navigateTo('home');
   };
   
-  // Effect for styling and fonts (runs once)
   React.useEffect(() => {
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
@@ -60,6 +58,8 @@ export default function App() {
               return <LoginPage navigateTo={navigateTo} setIsLoggedIn={setIsLoggedIn} />;
           case 'dashboard':
               return <DashboardPage navigateTo={navigateTo} />; 
+          case 'profile':
+              return <ProfilePage />;
           case 'home':
           default:
               return <HomePage />;
@@ -78,4 +78,3 @@ export default function App() {
     </GoogleOAuthProvider>
   );
 }
-
