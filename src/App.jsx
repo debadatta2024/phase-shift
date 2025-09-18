@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 // --- SVG Icon Components ---
-const UploadCloudIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-slate-500">
+const UploadCloudIcon = ({ className = "h-10 w-10 text-slate-500" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
     <path d="M12 12v9" />
     <path d="m16 16-4-4-4 4" />
@@ -51,26 +51,46 @@ const StatusIcon = ({ status }) => {
     }
 }
 
+const LogOutIcon = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+);
+
+
 // --- Header Component ---
-const Header = () => {
+const Header = ({ navigateTo, isLoggedIn, onLogout }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
         <header className="bg-white/70 backdrop-blur-lg shadow-sm sticky top-0 z-50 border-b border-white/20">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                    <div className="flex items-center space-x-3">
+                    <div onClick={() => navigateTo('home')} className="flex items-center space-x-3 cursor-pointer">
                          <SparklesIcon className="h-8 w-8 text-teal-600" />
                         <span className="text-2xl font-bold text-slate-800">Jeevan Jyothi</span>
                     </div>
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center space-x-8">
-                        <a href="#simplifier" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Simplifier</a>
-                        <a href="#how-it-works" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">How It Works</a>
-                        <a href="#features" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Features</a>
-                        <button className="bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-700 transition-all duration-300 transform hover:scale-105">
-                            Get Started
-                        </button>
+                        {!isLoggedIn ? (
+                          <>
+                            <a href="#simplifier" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Simplifier</a>
+                            <a href="#how-it-works" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">How It Works</a>
+                            <a href="#features" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Features</a>
+                            <button onClick={() => navigateTo('login')} className="bg-teal-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-teal-700 transition-all duration-300 transform hover:scale-105">
+                                Login / Sign Up
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => navigateTo('dashboard')} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Dashboard</button>
+                            <button onClick={onLogout} className="bg-rose-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-rose-600 transition-all duration-300 transform hover:scale-105">
+                                Logout
+                            </button>
+                          </>
+                        )}
                     </nav>
                     {/* Mobile Menu Button */}
                     <div className="md:hidden">
@@ -89,13 +109,24 @@ const Header = () => {
             {/* Mobile Menu */}
             {isMenuOpen && (
                 <div className="md:hidden bg-white/80 backdrop-blur-lg pb-4">
-                    <nav className="flex flex-col items-center space-y-4 pt-2">
-                        <a href="#simplifier" onClick={() => setIsMenuOpen(false)} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Simplifier</a>
-                        <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">How It Works</a>
-                        <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Features</a>
-                        <button className="bg-teal-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-teal-700 transition-colors w-1/2">
-                            Get Started
-                        </button>
+                     <nav className="flex flex-col items-center space-y-4 pt-2">
+                        {!isLoggedIn ? (
+                          <>
+                            <a href="#simplifier" onClick={() => setIsMenuOpen(false)} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Simplifier</a>
+                            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">How It Works</a>
+                            <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Features</a>
+                            <button onClick={() => { navigateTo('login'); setIsMenuOpen(false); }} className="bg-teal-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-teal-700 transition-colors w-1/2">
+                                Login / Sign Up
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => { navigateTo('dashboard'); setIsMenuOpen(false); }} className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Dashboard</button>
+                            <button onClick={() => { onLogout(); setIsMenuOpen(false); }} className="bg-rose-500 text-white px-5 py-2 rounded-lg font-semibold hover:bg-rose-600 transition-colors w-1/2">
+                                Logout
+                            </button>
+                          </>
+                        )}
                     </nav>
                 </div>
             )}
@@ -441,10 +472,145 @@ const Footer = () => {
     );
 };
 
+// --- HomePage Wrapper Component ---
+const HomePage = () => (
+    <>
+      <Hero />
+      <Simplifier />
+      <HowItWorks />
+      <Features />
+    </>
+);
+
+// --- NEW: Login Page Component ---
+const LoginPage = ({ navigateTo }) => {
+    const [isLoginView, setIsLoginView] = useState(true);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // For now, any login/signup attempt succeeds and navigates to dashboard
+        navigateTo('dashboard');
+    }
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-green-50/50 py-12 px-4 sm:px-6 lg:px-8">
+             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48cGF0aCBmaWxsPSJyZ2JhKDQ1LDIxMiwxOTEsMC4wNSkiIGQ9Ik0xNiAwIEwxNiAzMiBNMCwxNiBMMzIsMTYiPjwvcGF0aD48L3N2Zz4=')]"></div>
+            <div className="max-w-md w-full space-y-8 bg-white/70 backdrop-blur-md p-10 rounded-2xl shadow-lg border border-slate-200/60 z-10">
+                <div>
+                    <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
+                        {isLoginView ? 'Sign in to your account' : 'Create a new account'}
+                    </h2>
+                </div>
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    <div className="rounded-md shadow-sm -space-y-px">
+                        {!isLoginView && (
+                             <div>
+                                <label htmlFor="name" className="sr-only">Full Name</label>
+                                <input id="name" name="name" type="text" required className="appearance-none rounded-none relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm" placeholder="Full Name" />
+                            </div>
+                        )}
+                        <div>
+                            <label htmlFor="email-address" className="sr-only">Email address</label>
+                            <input id="email-address" name="email" type="email" autoComplete="email" required className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 ${isLoginView ? 'rounded-t-md' : ''} focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm`} placeholder="Email address" />
+                        </div>
+                        <div>
+                            <label htmlFor="password" className="sr-only">Password</label>
+                            <input id="password" name="password" type="password" autoComplete="current-password" required className="appearance-none rounded-none relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm" placeholder="Password" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                            {isLoginView ? 'Sign in' : 'Sign up'}
+                        </button>
+                    </div>
+                </form>
+                <div className="text-sm text-center">
+                    <button onClick={() => setIsLoginView(!isLoginView)} className="font-medium text-teal-600 hover:text-teal-500">
+                        {isLoginView ? 'Don\'t have an account? Sign up' : 'Already have an account? Sign in'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NEW: Dashboard Page Component ---
+const DashboardPage = () => {
+    // Mock data for user's reports
+    const reports = [
+        { id: 1, name: "CBC_Report_Sept2025.pdf", date: "September 18, 2025" },
+        { id: 2, name: "Lipid_Profile_June2025.pdf", date: "June 12, 2025" },
+        { id: 3, name: "Thyroid_Test_Jan2025.pdf", date: "January 05, 2025" },
+    ];
+    
+    return (
+        <div className="min-h-screen bg-green-50/50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="flex justify-between items-center mb-8">
+                    <h1 className="text-3xl font-bold text-slate-800">Welcome to your Dashboard</h1>
+                    <button className="flex items-center space-x-2 bg-teal-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+                        <UploadCloudIcon className="h-5 w-5"/>
+                        <span>Upload New Report</span>
+                    </button>
+                </div>
+
+                <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200/60 p-6">
+                    <h2 className="text-xl font-semibold text-slate-800 mb-4">Your Reports</h2>
+                    <div className="space-y-4">
+                        {reports.length > 0 ? (
+                            reports.map(report => (
+                                <div key={report.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-md hover:border-teal-300 transition-all">
+                                    <div className="flex items-center space-x-4">
+                                        <FileTextIcon className="h-6 w-6 text-teal-600" />
+                                        <div>
+                                            <p className="font-medium text-slate-800">{report.name}</p>
+                                            <p className="text-sm text-slate-500">Uploaded on {report.date}</p>
+                                        </div>
+                                    </div>
+                                    <button className="bg-white text-teal-700 px-4 py-2 rounded-lg font-semibold border border-teal-200 hover:bg-teal-50 transition-colors">
+                                        View Simplified Report
+                                    </button>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-12 text-slate-500">
+                                <p>You haven't uploaded any reports yet.</p>
+                                <p>Click "Upload New Report" to get started.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // --- Main App Component ---
 export default function App() {
+  const [currentPage, setCurrentPage] = useState('home'); // 'home', 'login', 'dashboard'
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // This effect ensures that when the page changes, the view scrolls to the top.
   useEffect(() => {
-    // Dynamically add Google Fonts and custom animations
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+  
+  // Navigation function
+  const navigateTo = (page) => {
+    if (page === 'dashboard') {
+        setIsLoggedIn(true);
+    }
+    setCurrentPage(page);
+  };
+  
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    navigateTo('home');
+  }
+
+  // Effect for styling and fonts (runs once)
+  useEffect(() => {
     const fontLink = document.createElement('link');
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
     fontLink.rel = 'stylesheet';
@@ -483,16 +649,25 @@ export default function App() {
     document.head.appendChild(styleTag);
   }, []);
 
+  const renderPage = () => {
+      switch(currentPage) {
+          case 'login':
+              return <LoginPage navigateTo={navigateTo} />;
+          case 'dashboard':
+              return <DashboardPage />;
+          case 'home':
+          default:
+              return <HomePage />;
+      }
+  }
+
   return (
     <div className="bg-green-50 font-['Inter',_sans-serif] text-slate-700">
-      <Header />
+      <Header navigateTo={navigateTo} isLoggedIn={isLoggedIn} onLogout={handleLogout} />
       <main>
-        <Hero />
-        <Simplifier />
-        <HowItWorks />
-        <Features />
+        {renderPage()}
       </main>
-      <Footer />
+      {currentPage === 'home' && <Footer />}
     </div>
   )
 }
