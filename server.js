@@ -4,11 +4,11 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { OAuth2Client } from 'google-auth-library'; // <-- NEW IMPORT
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
 
-const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID); // <-- NEW OAUTH CLIENT
+const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 
 // --- User Model ---
 const UserSchema = new mongoose.Schema({
@@ -20,7 +20,6 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', UserSchema);
 
-// --- Express App Initialization ---
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -37,8 +36,24 @@ mongoose.connect(mongoUri)
         process.exit(1);
     });
 
-// --- Middleware ---
-app.use(cors());
+// --- UPDATED CORS CONFIGURATION FOR VERCEL ---
+// IMPORTANT: Replace the vercel.app URL with your actual frontend deployment URL
+const allowedOrigins = [
+    'https://your-project-name.vercel.app', 
+    'http://localhost:5173'                 
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
+
+
 app.use(express.json());
 
 // --- Helper function to sign our own app's token ---
@@ -47,15 +62,12 @@ const signAppToken = (user) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-/*
- * =========================================
- * AUTHENTICATION ROUTES
- * =========================================
- */
+// --- API Routes ---
+app.get('/api', (req, res) => {
+    res.json({ message: 'Hello from the Jeevan Jyothi API server!' });
+});
 
-// POST /api/auth/signup
 app.post('/api/auth/signup', async (req, res) => {
-    // ... no changes to this route ...
     try {
         const { name, email, password } = req.body;
         const existingUser = await User.findOne({ email });
@@ -73,13 +85,11 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 });
 
-// POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
-    // ... no changes to this route ...
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
-        if (!user || !user.password) { // Check if user exists and has a password
+        if (!user || !user.password) {
             return res.status(400).json({ message: "Invalid credentials." });
         }
         const isMatch = await bcrypt.compare(password, user.password);
@@ -94,7 +104,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// --- NEW GOOGLE AUTH ROUTE ---
 app.post('/api/auth/google', async (req, res) => {
     try {
         const { credential } = req.body;
@@ -106,21 +115,18 @@ app.post('/api/auth/google', async (req, res) => {
 
         let user = await User.findOne({ email });
 
-        // If user exists, log them in. If not, create a new user account.
         if (user) {
-            user.googleId = googleId; // Link googleId if they exist
+            user.googleId = googleId;
             await user.save();
         } else {
             user = new User({
                 name,
                 email,
                 googleId,
-                // No password needed for Google sign-in
             });
             await user.save();
         }
 
-        // Sign and return our application's own JWT
         const token = signAppToken(user);
         res.status(200).json({ message: "Google sign-in successful!", token });
 
@@ -130,18 +136,18 @@ app.post('/api/auth/google', async (req, res) => {
     }
 });
 
-
-/*
- * =========================================
- * USER DATA ROUTES (Placeholder)
- * =========================================
- */
 app.get('/api/dashboard/data', (req, res) => {
-    // ... no changes here ...
+    res.json({ message: "This is a placeholder for protected dashboard data." });
 });
 
 // --- Server Startup ---
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+// This part is mainly for local development. Vercel will handle the server in production.
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+    });
+}
+
+// Export the app for Vercel's serverless environment
+export default app;
 
