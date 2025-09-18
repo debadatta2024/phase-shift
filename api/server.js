@@ -14,8 +14,8 @@ const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: false }, // Password is not required for Google users
-    googleId: { type: String, sparse: true, unique: true } // Store Google's unique ID
+    password: { type: String, required: false },
+    googleId: { type: String, sparse: true, unique: true }
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -26,7 +26,7 @@ const PORT = process.env.PORT || 3001;
 // --- Database Connection ---
 const mongoUri = process.env.MONGO_URI;
 if (!mongoUri) {
-    console.error("FATAL ERROR: MONGO_URI is not defined. Please check your .env file.");
+    console.error("FATAL ERROR: MONGO_URI is not defined.");
     process.exit(1);
 }
 mongoose.connect(mongoUri)
@@ -36,21 +36,33 @@ mongoose.connect(mongoUri)
         process.exit(1);
     });
 
+// --- DYNAMIC CORS CONFIGURATION FOR VERCEL ---
 const allowedOrigins = [
-    'https://phase-shift-six.vercel.app/', 
-    'http://localhost:5173'                 
+    'http://localhost:5173' // Your local development URL
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Allow local development origin
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            return callback(null, true);
         }
+
+        // Dynamically allow any Vercel deployment URL (including previews)
+        try {
+            if (new URL(origin).hostname.endsWith('.vercel.app')) {
+                return callback(null, true);
+            }
+        } catch (err) {
+            // Malformed origin URL, deny.
+        }
+
+        callback(new Error('Not allowed by CORS'));
     }
 }));
-
 
 app.use(express.json());
 
@@ -61,7 +73,6 @@ const signAppToken = (user) => {
 };
 
 // --- API Routes ---
-// This base route will now work correctly on Vercel
 app.get('/api', (req, res) => {
     res.json({ message: 'Hello from the Jeevan Jyothi API server!' });
 });
@@ -136,11 +147,9 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 // --- Server Startup ---
-// This part is for local development. Vercel ignores it in production.
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-// Export the app for Vercel's serverless environment
+// Export the app for Vercel
 export default app;
-
