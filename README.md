@@ -1,6 +1,6 @@
-# Jeevan Jyothi - AI Medical Report Simplifier 🩺
+# CliniClear - AI Medical Report Simplifier 🩺
 
-Jeevan Jyothi ("Light of Life") is a web application designed to demystify complex medical lab reports for the average person. Users can sign up, paste the text from their medical reports (like a Complete Blood Count or Lipid Profile), and receive a simple, color-coded explanation of what each value means in plain English.
+CliniClear is a web application designed to demystify complex medical lab reports for the average person. Users can sign up, paste the text from their medical reports (like a Complete Blood Count or Lipid Profile), and receive a simple, color-coded explanation of what each value means in plain English.
 
 This project was built from the ground up, featuring a secure backend with user authentication and a dynamic, responsive frontend built with React.
 
