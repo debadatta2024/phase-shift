@@ -10,7 +10,7 @@ const Header = ({ navigateTo, isLoggedIn, onLogout }) => {
                 <div className="flex items-center justify-between h-16">
                     <div onClick={() => navigateTo('home')} className="flex items-center space-x-3 cursor-pointer">
                          <SparklesIcon className="h-8 w-8 text-teal-600" />
-                        <span className="text-2xl font-bold text-slate-800">Jeevan Jyothi</span>
+                        <span className="text-2xl font-bold text-slate-800">CliniClear</span>
                     </div>
                     <nav className="hidden md:flex items-center space-x-8">
                         {!isLoggedIn ? (

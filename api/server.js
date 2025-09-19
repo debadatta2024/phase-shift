@@ -6,17 +6,16 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { OAuth2Client } from 'google-auth-library';
 
-// This is the most reliable way to load .env variables
 dotenv.config();
 
 const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 
-// --- User Model (Updated for Google Sign-In) ---
+// --- User Model ---
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: false }, // Password is not required for Google users
-    googleId: { type: String, sparse: true, unique: true } // Store Google's unique ID
+    password: { type: String, required: false },
+    googleId: { type: String, sparse: true, unique: true }
 }, { timestamps: true });
 
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
@@ -128,19 +127,18 @@ const startServer = async () => {
             }
         });
 
-        // --- UPDATED PROFILE GET ROUTE ---
         app.get('/api/user/profile', authMiddleware, async (req, res) => {
             try {
                 const user = await User.findById(req.user.id);
                 if (!user) {
                     return res.status(404).json({ message: 'User not found.' });
                 }
-                // Send back user info, explicitly excluding password, but ADDING a flag
                 res.json({
                     _id: user._id,
                     name: user.name,
                     email: user.email,
-                    hasPassword: !!user.password // This will be true or false
+                    hasPassword: !!user.password,
+                    isGoogleConnected: !!user.googleId
                 });
             } catch (error) {
                 console.error("PROFILE GET ERROR:", error);
@@ -164,7 +162,6 @@ const startServer = async () => {
             }
         });
         
-        // This password route is already smart enough to handle both cases, no changes needed here.
         app.put('/api/user/password', authMiddleware, async (req, res) => {
             const { currentPassword, newPassword } = req.body;
             try {
@@ -172,7 +169,6 @@ const startServer = async () => {
                 if (!user) {
                     return res.status(404).json({ message: 'User not found.' });
                 }
-                // Case 1: Google user creating a password for the first time.
                 if (!user.password) {
                     if (!newPassword || newPassword.length < 6) {
                         return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
@@ -182,7 +178,6 @@ const startServer = async () => {
                     await user.save();
                     return res.json({ message: 'Password created successfully.' });
                 }
-                // Case 2: User changing an existing password.
                 if (!currentPassword) {
                     return res.status(400).json({ message: 'Current password is required.' });
                 }
@@ -203,6 +198,38 @@ const startServer = async () => {
             }
         });
 
+        app.put('/api/user/connect-google', authMiddleware, async (req, res) => {
+            try {
+                const { credential } = req.body;
+                const ticket = await client.verifyIdToken({
+                    idToken: credential,
+                    audience: process.env.VITE_GOOGLE_CLIENT_ID,
+                });
+                const { email, sub: googleId } = ticket.getPayload();
+
+                const loggedInUser = await User.findById(req.user.id);
+                
+                if (loggedInUser.email !== email) {
+                    return res.status(400).json({ message: "Google account email does not match your current account." });
+                }
+                
+                const existingGoogleUser = await User.findOne({ googleId });
+                if (existingGoogleUser && existingGoogleUser.id !== loggedInUser.id) {
+                    return res.status(400).json({ message: "This Google account is already linked to another user." });
+                }
+
+                loggedInUser.googleId = googleId;
+                await loggedInUser.save();
+
+                res.json({ message: "Google account connected successfully." });
+
+            } catch (error) {
+                console.error("GOOGLE CONNECT ERROR:", error);
+                res.status(500).json({ message: "Failed to connect Google account." });
+            }
+        });
+
+
         app.listen(PORT, () => {
             console.log(`🚀 Server is running on http://localhost:${PORT}`);
         });
@@ -216,4 +243,3 @@ const startServer = async () => {
 
 startServer();
 export default app;
-

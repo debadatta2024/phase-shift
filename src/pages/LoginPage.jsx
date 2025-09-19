@@ -91,7 +91,7 @@ const LoginPage = ({ navigateTo, setIsLoggedIn }) => {
                     <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10"></div>
                     <div className="absolute -bottom-16 -left-10 w-48 h-48 rounded-full bg-white/10"></div>
                     <SparklesIcon className="h-16 w-16 mb-4 text-white" />
-                    <h2 className="text-3xl font-bold text-center mb-2">Jeevan Jyothi</h2>
+                    <h2 className="text-3xl font-bold text-center mb-2">CliniClear</h2>
                     <p className="text-center text-teal-100">Your personal health record, simplified. Access your dashboard to track your progress.</p>
                 </div>
 

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { UserIcon, LockIcon, MailIcon } from '../components/Icons.jsx';
+import React, { useState, useEffect, useCallback } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import { UserIcon, LockIcon, MailIcon, CheckCircleIcon } from '../components/Icons.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -8,62 +9,43 @@ const ProfilePage = () => {
     const [name, setName] = useState('');
     const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [hasPassword, setHasPassword] = useState(false);
+    const [isGoogleConnected, setIsGoogleConnected] = useState(false);
     
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setError('You must be logged in to view this page.');
-                setLoading(false);
-                return;
+    // --- REFACTORED DATA FETCHING LOGIC ---
+    // We've moved the fetch logic into its own function so we can call it again later.
+    const fetchUserProfile = useCallback(async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('You must be logged in to view this page.');
+            setLoading(false);
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/user/profile`, { headers: { 'x-auth-token': token } });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to fetch profile.');
             }
-            
-            // --- NEW: AbortController for Timeout ---
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second timeout
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
-                    headers: { 'x-auth-token': token },
-                    signal: controller.signal // Pass the signal to the fetch request
-                });
-
-                // Clear the timeout if the request completes
-                clearTimeout(timeoutId);
-
-                if (!res.ok) {
-                    let errorMsg = `An error occurred: ${res.statusText} (Status: ${res.status})`;
-                    const contentType = res.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        const errorData = await res.json();
-                        errorMsg = errorData.message || errorMsg;
-                    }
-                    throw new Error(errorMsg);
-                }
-
-                const data = await res.json();
-                setUser(data);
-                setName(data.name);
-                setHasPassword(data.hasPassword);
-            } catch (err) {
-                if (err.name === 'AbortError') {
-                    setError("Request timed out. The server might be down or unresponsive.");
-                } else {
-                    setError(err.message);
-                }
-            } finally {
-                // This block will now always execute
-                clearTimeout(timeoutId);
-                setLoading(false);
-            }
-        };
-
-        fetchUserProfile();
+            const data = await res.json();
+            setUser(data);
+            setName(data.name);
+            setHasPassword(data.hasPassword);
+            setIsGoogleConnected(data.isGoogleConnected);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    // This useEffect now just calls our main fetch function once on load.
+    useEffect(() => {
+        fetchUserProfile();
+    }, [fetchUserProfile]);
 
     const handleNameUpdate = async (e) => {
         e.preventDefault();
@@ -116,6 +98,31 @@ const ProfilePage = () => {
         }
     };
 
+    const handleConnectGoogle = async (credentialResponse) => {
+        setError('');
+        setSuccess('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/api/user/connect-google`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                body: JSON.stringify({ credential: credentialResponse.credential }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            setSuccess(data.message);
+
+            // --- THIS IS THE FIX ---
+            // After a successful connection, re-fetch the user's profile
+            // to get the latest `isGoogleConnected` status from the server.
+            await fetchUserProfile();
+
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -142,7 +149,7 @@ const ProfilePage = () => {
                             <h2 className="text-xl font-semibold text-slate-700 mb-4">Account Details</h2>
                             <form onSubmit={handleNameUpdate} className="space-y-4">
                                 <div className="relative">
-                                     <MailIcon className="absolute left-3 top-1/2 -translate-y-1/y text-slate-400" />
+                                     <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                      <input type="email" value={user.email} disabled className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg bg-slate-100 cursor-not-allowed" />
                                 </div>
                                  <div className="relative">
@@ -153,6 +160,26 @@ const ProfilePage = () => {
                             </form>
                         </div>
 
+                        <div className="bg-white/70 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-slate-200/60 mb-8">
+                            <h2 className="text-xl font-semibold text-slate-700 mb-4">Connected Accounts</h2>
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                                <span className="font-medium text-slate-600">Google Account</span>
+                                {isGoogleConnected ? (
+                                    <div className="flex items-center space-x-2 text-emerald-600 font-semibold">
+                                        <CheckCircleIcon />
+                                        <span>Connected</span>
+                                    </div>
+                                ) : (
+                                    <GoogleLogin 
+                                        onSuccess={handleConnectGoogle}
+                                        onError={() => setError("Google connection failed.")}
+                                        text="connect_with"
+                                        shape="pill"
+                                    />
+                                )}
+                            </div>
+                        </div>
+
                         <div className="bg-white/70 backdrop-blur-md p-8 rounded-2xl shadow-lg border border-slate-200/60">
                              <h2 className="text-xl font-semibold text-slate-700 mb-4">
                                 {hasPassword ? 'Change Password' : 'Create a Password'}
@@ -160,7 +187,7 @@ const ProfilePage = () => {
                              <p className="text-sm text-slate-500 mb-4">
                                 {hasPassword 
                                     ? 'Update your existing password.' 
-                                    : 'You signed up with Google. Create a password below to enable standard email & password login.'}
+                                    : 'You originally signed in with Google. Create a password below to enable standard email & password login.'}
                              </p>
                              <form onSubmit={handlePasswordUpdate} className="space-y-4">
                                 {hasPassword && (
@@ -186,11 +213,10 @@ const ProfilePage = () => {
                 )}
                 
                 {success && <p className="text-center text-emerald-500 mt-4 font-medium">{success}</p>}
-                {error && user.email && <p className="text-center text-red-500 mt-4 font-medium">{error}</p>}
+                {error && <p className="text-center text-red-500 mt-4 font-medium">{error}</p>}
             </div>
         </div>
     );
 };
 
 export default ProfilePage;
-
